@@ -79,32 +79,37 @@ kelp_df$date <- as.Date(paste0(kelp_df$year, "-",
 a)  In the same plot
 
 ```{r}
+colors <- c("darkgreen", "#56B4E9", "orange", "purple", "#0072B2", "#D55E00")
 
-# Create a plot for each variable
-plot_list <- lapply(c("kelp_biomass", "depth", "sst", "NO3", "NO2", "NH4"), function(var) {
-  ggplot(kelp_df, aes(x = date, y = get(var))) +
-    geom_line() +
-    labs(x = "Date", y = var)
+# Create a plot for each variable with a buffer of 10% of the data range
+plot_list <- lapply(seq_along(colors), function(i) {
+  var <- y_vars[i]
+  y_range <- range(kelp_df[[var]])
+  buffer <- diff(y_range) * 0.2
+  ggplot(kelp_df, aes(x = date, y = !!sym(var))) +
+    geom_line(color = colors[i]) +
+    labs(x = "Date", y = var) +
+    ylim(y_range + c(-buffer, buffer))
 })
 
 # Combine the plots into a single figure using facet_wrap
 do.call(gridExtra::grid.arrange, c(plot_list, ncol = 2))
 
-
 ```
 
-b)  In six different graphs
+b)  Print them in six different graphs
 
 ```{r}
 # Create a vector of y variables to loop through
 y_vars <- c("kelp_biomass", "depth", "sst", "NO3", "NO2", "NH4")
+colors <- c("darkgreen", "#56B4E9", "orange", "purple", "#0072B2", "#D55E00")
 
 # Create a for loop to generate a separate ggplot for each y variable
 for (i in seq_along(y_vars)) {
   
   # Create the ggplot
   p <- ggplot(kelp_df, aes(x = date, y = !!sym(y_vars[i]))) +
-    geom_line() +
+    geom_line(color = colors[i]) +
     labs(title = y_vars[i], y = y_vars[i], x = "Date")
   
   # Print the ggplot
@@ -113,7 +118,7 @@ for (i in seq_along(y_vars)) {
 }
 ```
 
-c) Example of the Kelp Biomass graph
+c) Example of the Kelp Biomass graph....
 
 ```{r}
 ggplot(kelp_df, aes(x = date, y = kelp_biomass)) +
@@ -168,7 +173,6 @@ tm_shape(kelp_raster) +
   tm_scale_bar(position = c("left", "bottom"), text.size = 0.7) +
   tm_compass(type = "4star", position = c("left", "top")) +
   tm_view(set.view = c(-120, 34.1, 8))
-
 
 tmap_mode("view")
   
