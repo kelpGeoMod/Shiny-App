@@ -69,8 +69,7 @@ quarter <- sample(1:4, 100, replace = TRUE)
 kelp_df <- data.frame(latitude, longitude, kelp_biomass, depth, sst, NO3, NO2, NH4, year, quarter)
 
 # Create a new date column merging year and quarter columns
-kelp_df$date <- as.Date(paste0(kelp_df$year, "-",
-                                 as.character((kelp_df$quarter-1)*3+1), "-01"))
+kelp_df$date <- as.Date(paste0(kelp_df$year, "-", as.character((kelp_df$quarter-1)*3+1), "-01"))
 
 ```
 
@@ -80,7 +79,7 @@ a)  In the same plot
 
 ```{r}
 colors <- c("darkgreen", "#56B4E9", "orange", "purple", "#0072B2", "#D55E00")
-
+y_vars <- c("kelp_biomass", "depth", "sst", "NO3", "NO2", "NH4")
 # Create a plot for each variable with a buffer of 10% of the data range
 plot_list <- lapply(seq_along(colors), function(i) {
   var <- y_vars[i]
@@ -101,7 +100,6 @@ b)  Print them in six different graphs
 
 ```{r}
 # Create a vector of y variables to loop through
-y_vars <- c("kelp_biomass", "depth", "sst", "NO3", "NO2", "NH4")
 colors <- c("darkgreen", "#56B4E9", "orange", "purple", "#0072B2", "#D55E00")
 
 # Create a for loop to generate a separate ggplot for each y variable
@@ -141,6 +139,7 @@ r <- raster(extent(kelp_sf), nrow = 100, ncol = 100, crs = st_crs(4326))
 
 # Rasterize the kelp_sf object
 kelp_raster <- rasterize(kelp_sf, r, field = "kelp_biomass")
+
 ```
 
 ### 6. Create the polygon that shows the area we are interested on
@@ -174,6 +173,6 @@ tm_shape(kelp_raster) +
   tm_compass(type = "4star", position = c("left", "top")) +
   tm_view(set.view = c(-120, 34.1, 8))
 
-tmap_mode("view")
+tmap_mode("View")
   
 ```
