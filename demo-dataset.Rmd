@@ -54,8 +54,8 @@ latitude <- runif(100, min = 33.83, max = 34.49)
 longitude <- runif(100, min = -120.50, max = -119.45)
 kelp_biomass <- rnorm(100, mean = seq(300, 80, length.out = 100), sd = seq(50, 5, length.out = 100)) #adding trend with a sd from a sequence.
 depth <- runif(100, min = 17, max = 40)
-sst <- runif(100, min = 5, max = 20)
-NO3 <- runif(100, min = 0, max = 1)
+sst <- rnorm(100, mean = seq(10, 18, length.out = 100), sd = seq(2, 5, length.out = 100))
+NO3 <- rnorm(100, mean = seq(0, 1, length.out = 100), sd = seq(0, 0.1, length.out = 100))
 NO2 <- runif(100, min = 0.001, max = 0.05)
 NH4 <- runif(100, min = 1, max = 5)
 year <- rep(2014:2022, each = 12)[1:100]
@@ -116,7 +116,7 @@ for (i in seq_along(y_vars)) {
 }
 ```
 
-c) Example of the Kelp Biomass graph....
+c)  Example of the Kelp Biomass graph....
 
 ```{r}
 ggplot(kelp_df, aes(x = date, y = kelp_biomass)) +
