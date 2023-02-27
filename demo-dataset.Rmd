@@ -196,11 +196,13 @@ coords <- data.frame(x = c(xmin, xmax), y = c(ymin, ymax))
 grid_sf <- st_as_sf(coords, coords = c("x", "y"), crs = crs) %>%
   st_make_grid(cellsize = 0.03)  # adjust the cell size as needed
 
+crs(idw_model)
+
 # interpolate using IDW method
 idw_model <- gstat::idw(kelp_biomass ~ 1, kelp_sf_2, newdata = grid_sf, idp = 2)
 
 # Create an empty raster with the desired resolution and extent
-empty_r <- raster(extent(area_sf), resolution = res(kelp_raster))
+empty_r <- raster(extent(area_sf), resolution = res(kelp_raster), crs = "+proj=longlat +datum=WGS84 +no_defs" )
 
 # rasterize the idw_model object using the var1.pred column
 idw_raster <- rasterize(idw_model, empty_r, field = "var1.pred")
@@ -219,23 +221,33 @@ y_vars <- c("kelp_biomass", "depth", "sst", "NO3", "NO2", "NH4")
 for (i in y_vars){
   
   # interpolate with IDW method per attribute
-  attribute_model <- gstat::idw(depth ~ 1, kelp_sf_2, newdata = grid_sf, idp = 2)
+x <- gstat::idw(i ~ 1, kelp_sf_2, newdata = grid_sf, idp = 2)
   
   
   # rasterize the idw_model_object object using the var1.pred column
-  attribute_raster <- rasterize(attribute_model, empty_r, field = "var1.pred")
+y <- rasterize(x, empty_r, field = "var1.pred")
   
   
-  # crop the atteribute_raster to the area of interest
-  cropped_raster <- crop(attribute_raster, extent(area_sf))
-  
-  # assign the cropped raster to a new variable with the unique name in the global environment
-  return(paste0(i, "cropped_raster"))
+# crop the attribute_raster to the area of interest
+cropped_raster <- crop(y, extent(area_sf))
   
 }
 
 ```
 
+
+use other interpolations
+```{r}
+  # interpolate with IDW method per attribute
+x <- gstat::idw(sst ~ 1, kelp_sf_2, newdata = grid_sf, idp = 2)
+  
+  # rasterize the idw_model_object object using the var1.pred column
+y <- rasterize(x, empty_r, field = "var1.pred")
+  
+  
+# crop the attribute_raster to the area of interest
+sst_cropped_raster <- crop(y, extent(area_sf))
+```
 
 
 
@@ -256,18 +268,25 @@ grid[grid < 96] <- rnorm(sum(grid < 80), mean = 0, sd = 5)
 model_raster <- raster(grid)
 
 # Assign the extent of 'kelp_raster' to 'r'
-extent(model_raster) <- extent(kelp_raster)
-
-plot(model_raster)
+extent(model_raster) <- extent(kelp_raster_cropped)
+crs(model_raster) <- crs(kelp_raster_cropped)
 
 ```
 
 
 ### 10. Plot the models and data raster with tmap
-
 ```{r}
 # Load the shapefile
 channel_islands <- st_read(here::here("data", "channel_islands.shp"))
+
+```
+
+Check if the rasters have the same dimentions
+```{r}
+
+#compareRaster(model_raster, kelp_raster_cropped)
+#plot(model_raster)
+
 
 ```
 
@@ -289,7 +308,13 @@ tm_shape(kelp_raster_cropped) +
   tm_raster(style = "fisher", palette = "Greens", alpha = 0.8) +
   
 tm_shape(model_raster) +
+  tm_raster(style = "fisher", palette = "Reds", alpha = 0.8) +
+  
+tm_shape(depth_cropped_raster) +
   tm_raster(style = "fisher", palette = "Blues", alpha = 0.8) +
+  
+tm_shape(sst_cropped_raster) +
+  tm_raster(style = "fisher", palette = "PuRd", alpha = 0.8) +
   
   tm_legend(title = "kelpGeoMod") +
   tm_scale_bar(position = c("left", "bottom"), text.size = 0.7) +
