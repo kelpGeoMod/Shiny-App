@@ -42,6 +42,9 @@ library(sp)
 library(tmap)
 library(sf)
 library(stars)
+library(gstat)
+library(rgdal)
+library(kml)
 
 ```
 
@@ -137,10 +140,24 @@ kelp_sf <- st_as_sf(kelp_df, coords = c("longitude", "latitude"), crs = st_crs(4
 # Create a raster template using the world map
 r <- raster(extent(kelp_sf), nrow = 100, ncol = 100, crs = st_crs(4326))
 
+
 # Rasterize the kelp_sf object
 kelp_raster <- rasterize(kelp_sf, r, field = "kelp_biomass")
+```
+
+
+```{r}
+
+st_raster_depth <- st_rasterize(kelp_sf |> select(depth))
 
 ```
+
+```{r}
+summary(kelp_raster)
+plot(kelp_raster)
+values(kelp_raster)
+```
+
 
 ### 6. Create the polygon that shows the area we are interested on
 
@@ -156,23 +173,153 @@ st_crs(area_sf) <- st_crs(kelp_raster)
 
 ```
 
-### 7. Plot the raster with tmap
+
+### 8. Interpolation using the IDW method (inverse distance weighting)
+http://132.72.155.230:3838/r/spatial-interpolation-of-point-data.html
 
 ```{r}
+
+# convert to data.frame with x, y, and z columns
+kelp_sf_2 <- st_as_sf(kelp_df, coords = c("longitude", "latitude"), crs = st_crs(4326))
+
+# define the bounding box
+xmin <- -120.50
+ymin <- 33.83
+xmax <- -119.45
+ymax <- 34.49
+crs <- st_crs("+proj=longlat")
+
+# create a data.frame with the coordinates
+coords <- data.frame(x = c(xmin, xmax), y = c(ymin, ymax))
+
+# convert to an sf object and create a regular grid of points
+grid_sf <- st_as_sf(coords, coords = c("x", "y"), crs = crs) %>%
+  st_make_grid(cellsize = 0.03)  # adjust the cell size as needed
+
+# interpolate using IDW method
+idw_model <- gstat::idw(kelp_biomass ~ 1, kelp_sf_2, newdata = grid_sf, idp = 2)
+
+# Create an empty raster with the desired resolution and extent
+empty_r <- raster(extent(area_sf), resolution = res(kelp_raster))
+
+# rasterize the idw_model object using the var1.pred column
+idw_raster <- rasterize(idw_model, empty_r, field = "var1.pred")
+
+# crop the raster to the area of interest
+kelp_raster_cropped <- crop(idw_raster, extent(area_sf))
+
+```
+
+
+Create a for loop that rasterize each attribute from the kelp_df
+
+```{r}
+y_vars <- c("kelp_biomass", "depth", "sst", "NO3", "NO2", "NH4")
+
+for (i in y_vars){
+  
+  # interpolate with IDW method per attribute
+  attribute_model <- gstat::idw(depth ~ 1, kelp_sf_2, newdata = grid_sf, idp = 2)
+  
+  
+  # rasterize the idw_model_object object using the var1.pred column
+  attribute_raster <- rasterize(attribute_model, empty_r, field = "var1.pred")
+  
+  
+  # crop the atteribute_raster to the area of interest
+  cropped_raster <- crop(attribute_raster, extent(area_sf))
+  
+  # assign the cropped raster to a new variable with the unique name in the global environment
+  return(paste0(i, "cropped_raster"))
+  
+}
+
+```
+
+
+
+
+### 9. Create a new model grid
+```{r}
+
+# Set the dimensions of the grid
+nrow <- 100
+ncol <- 100
+
+# Create a grid with random values between 0 and 100
+grid <- matrix(runif(nrow*ncol, min = 0, max = 100), nrow = nrow, ncol = ncol)
+
+# Add bias towards 0
+grid[grid < 96] <- rnorm(sum(grid < 80), mean = 0, sd = 5)
+
+# Convert the grid to a raster object
+model_raster <- raster(grid)
+
+# Assign the extent of 'kelp_raster' to 'r'
+extent(model_raster) <- extent(kelp_raster)
+
+plot(model_raster)
+
+```
+
+
+### 10. Plot the models and data raster with tmap
+
+```{r}
+# Load the shapefile
+channel_islands <- st_read(here::here("data", "channel_islands.shp"))
+
+```
+
+
+```{r}
+# Plot world map, add the area of interest and the raster values
 data("World")
 
-# Plot world map, add the area of interest and the raster values
 tm_shape(World) +
   tm_polygons() +
+  
+tm_shape(channel_islands) +
+  tm_polygons()+
+  
 tm_shape(area_sf) +
   tm_borders(lwd = 1, col = "red") +
-tm_shape(kelp_raster) +
+  
+tm_shape(kelp_raster_cropped) +
   tm_raster(style = "fisher", palette = "Greens", alpha = 0.8) +
-  tm_legend(title = "Kelp Biomass") +
+  
+tm_shape(model_raster) +
+  tm_raster(style = "fisher", palette = "Blues", alpha = 0.8) +
+  
+  tm_legend(title = "kelpGeoMod") +
   tm_scale_bar(position = c("left", "bottom"), text.size = 0.7) +
-  tm_compass(type = "4star", position = c("left", "top")) +
   tm_view(set.view = c(-120, 34.1, 8))
 
-tmap_mode("View")
-  
+tmap_mode("view")
 ```
+
+
+
+
+
+```{r}
+
+tm_shape(World) +
+  tm_polygons() +
+tm_shape(channel_islands) +
+  tm_polygons()+
+tm_shape(area_sf) +
+  tm_borders(lwd = 1, col = "red") +
+tm_shape(raster_kelpbiomass) +
+  tm_raster() +
+tm_shape(kelp_raster_cropped) +
+  tm_raster() +
+  tm_shape(idw_model) +
+  tm_raster() +
+  tm_view(set.view = c(-120, 34.1, 8))
+
+tmap_mode("view")
+
+```
+
+
