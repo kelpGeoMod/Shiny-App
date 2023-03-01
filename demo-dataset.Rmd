@@ -242,7 +242,6 @@ Export the raster files
 # export the raster layer object to a .tiff file
 writeRaster(sst_raster, filename = "sst_raster.tiff", format="GTiff")
 
-
 ```
 
 
@@ -257,19 +256,29 @@ ncol <- 100
 grid <- matrix(runif(nrow*ncol, min = 0, max = 100), nrow = nrow, ncol = ncol)
 
 # Add bias towards 0
-grid[grid < 96] <- rnorm(sum(grid < 80), mean = 0, sd = 5)
+grid[grid < 70] <- rnorm(sum(grid < 20), mean = 50, sd = 4)
 
 # Convert the grid to a raster object
-model_raster <- raster(grid)
+harvest_model_raster <- raster(grid)
 
 # Assign the extent of 'kelp_raster' to 'r'
-extent(model_raster) <- extent(kelp_raster_cropped)
-crs(model_raster) <- crs(kelp_raster_cropped)
+extent(harvest_model_raster) <- extent(sst_raster)
+crs(harvest_model_raster) <- crs(sst_raster)
 
 
-plot(model_raster)
+plot(harvest_model_raster)
+
 
 ```
+
+
+Export the model rasters
+```{r}
+# export the raster layer object to a .tiff file
+writeRaster(harvest_model_raster, filename = "harvest_model_raster.tiff", format="GTiff")
+
+```
+
 
 
 ### 10. Plot the models and data raster with tmap
