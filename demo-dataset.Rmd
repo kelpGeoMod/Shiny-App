@@ -44,7 +44,6 @@ library(sf)
 library(stars)
 library(gstat)
 library(rgdal)
-library(kml)
 
 ```
 
@@ -76,6 +75,13 @@ kelp_df$date <- as.Date(paste0(kelp_df$year, "-", as.character((kelp_df$quarter-
 
 ```
 
+
+Export Data Frame
+```{r}
+# Export dataframe into RDS format
+saveRDS(kelp_df, file = "kelp_df.rds")
+```
+
 ### 4. Print the variables as time series graphs
 
 a)  In the same plot
@@ -83,6 +89,7 @@ a)  In the same plot
 ```{r}
 colors <- c("darkgreen", "#56B4E9", "orange", "purple", "#0072B2", "#D55E00")
 y_vars <- c("kelp_biomass", "depth", "sst", "NO3", "NO2", "NH4")
+kelp_df2 <- readRDS("kelp_df.rds")
 # Create a plot for each variable with a buffer of 10% of the data range
 plot_list <- lapply(seq_along(colors), function(i) {
   var <- y_vars[i]
@@ -131,7 +138,7 @@ ggplot(kelp_df, aes(x = date, y = kelp_biomass)) +
        caption = "LTER")
 ```
 
-### 5. Convert the data frame into a raster.
+### 5. Convert the data frame into a raster (this is only for map visualization)
 
 ```{r}
 # Convert kelp_df to sf object
@@ -139,17 +146,8 @@ kelp_sf <- st_as_sf(kelp_df, coords = c("longitude", "latitude"), crs = st_crs(4
 
 # Create a raster template using the world map
 r <- raster(extent(kelp_sf), nrow = 100, ncol = 100, crs = st_crs(4326))
-
-
 # Rasterize the kelp_sf object
 kelp_raster <- rasterize(kelp_sf, r, field = "kelp_biomass")
-```
-
-
-```{r}
-
-st_raster_depth <- st_rasterize(kelp_sf |> select(depth))
-
 ```
 
 ```{r}
@@ -174,7 +172,7 @@ st_crs(area_sf) <- st_crs(kelp_raster)
 ```
 
 
-### 8. Interpolation using the IDW method (inverse distance weighting)
+### 8. Interpolation using the IDW method (inverse distance weighting) over the area_sf
 http://132.72.155.230:3838/r/spatial-interpolation-of-point-data.html
 
 ```{r}
@@ -194,7 +192,7 @@ coords <- data.frame(x = c(xmin, xmax), y = c(ymin, ymax))
 
 # convert to an sf object and create a regular grid of points
 grid_sf <- st_as_sf(coords, coords = c("x", "y"), crs = crs) %>%
-  st_make_grid(cellsize = 0.03)  # adjust the cell size as needed
+  st_make_grid(cellsize = 0.02)  # adjust the cell size as needed
 
 # interpolate using IDW method
 idw_model <- gstat::idw(kelp_biomass ~ 1, kelp_sf_2, newdata = grid_sf, idp = 2)
@@ -206,7 +204,7 @@ empty_r <- raster(extent(area_sf), resolution = res(kelp_raster), crs = "+proj=l
 idw_raster <- rasterize(idw_model, empty_r, field = "var1.pred")
 
 # crop the raster to the area of interest
-kelp_raster_cropped <- crop(idw_raster, extent(area_sf))
+kelp_raster <- crop(idw_raster, extent(area_sf))
 
 ```
 
@@ -216,43 +214,24 @@ Create a for loop that rasterize each attribute from the kelp_df
 ```{r}
 y_vars <- c("kelp_biomass", "depth", "sst", "NO3", "NO2", "NH4")
 
-for (i in y_vars){
-  
   # interpolate with IDW method per attribute
-  x <- gstat::idw(i ~ 1, kelp_sf_2, newdata = grid_sf, idp = 2)
+  x <- gstat::idw(NH4 ~ 1, kelp_sf_2, newdata = grid_sf, idp = 2)
   
   # rasterize the idw_model_object object using the var1.pred column
   y <- rasterize(x, empty_r, field = "var1.pred")
   
   # crop the attribute_raster to the area of interest
-  test_final_cropped <- crop(y, extent(area_sf))
+  final_cropped <- crop(y, extent(area_sf))
   
-  paste0(i, "raster") <- final_cropped
+  NH4_raster <- final_cropped
   
-  return(paste0(i, "raster"))
-  
-}
-
 ```
 
-```{r}
-test <- list()
-for (i in y_vars){
-  test[i] <- 1+1
-}
-```
 
-use other interpolations
+Export the raster files
 ```{r}
-  # interpolate with IDW method per attribute
-x <- gstat::idw(NH4 ~ 1, kelp_sf_2, newdata = grid_sf, idp = 2)
-  
-  # rasterize the idw_model_object object using the var1.pred column
-y <- rasterize(x, empty_r, field = "var1.pred")
-  
-  
-# crop the attribute_raster to the area of interest
-NH4_cropped_raster <- crop(y, extent(area_sf))
+# export the raster layer object to a .tiff file
+writeRaster(NH4_raster, filename = "NH4_raster.tiff", format="GTiff")
 
 ```
 
@@ -277,6 +256,9 @@ model_raster <- raster(grid)
 extent(model_raster) <- extent(kelp_raster_cropped)
 crs(model_raster) <- crs(kelp_raster_cropped)
 
+
+plot(model_raster)
+
 ```
 
 
@@ -291,7 +273,6 @@ Check if the rasters have the same dimensions
 ```{r}
 
 compareRaster(NO3_cropped_raster, NH4_cropped_raster)
-
 model_raster <- projectRaster(kelp_raster_cropped,model_raster)
 
 #plot(model_raster)
@@ -330,29 +311,4 @@ tm_shape(sst_cropped_raster) +
 
 tmap_mode("View")
 ```
-
-
-
-
-
-```{r}
-
-tm_shape(World) +
-  tm_polygons() +
-tm_shape(channel_islands) +
-  tm_polygons()+
-tm_shape(area_sf) +
-  tm_borders(lwd = 1, col = "red") +
-tm_shape(raster_kelpbiomass) +
-  tm_raster() +
-tm_shape(kelp_raster_cropped) +
-  tm_raster() +
-  tm_shape(idw_model) +
-  tm_raster() +
-  tm_view(set.view = c(-120, 34.1, 8))
-
-tmap_mode("view")
-
-```
-
 
