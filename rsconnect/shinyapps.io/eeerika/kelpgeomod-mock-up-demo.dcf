@@ -1,0 +1,14 @@
+name: kelpgeomod-mock-up-demo
+title: kelpgeomod-mock-up-demo
+username:
+account: eeerika
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 8442563
+bundleId: 6901002
+url: https://eeerika.shinyapps.io/kelpgeomod-mock-up-demo/
+when: 1677653122.02455
+lastSyncTime: 1677653122.0246
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: demo-dataset.Rmd|map_shiny.R|model_shiny.R|README.md|timeseries_shiny.R|www/.DS_Store|www/.sass_cache_keys|www/fresh_theme.css|www/kelp.png|data
