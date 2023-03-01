@@ -89,7 +89,7 @@ a)  In the same plot
 ```{r}
 colors <- c("darkgreen", "#56B4E9", "orange", "purple", "#0072B2", "#D55E00")
 y_vars <- c("kelp_biomass", "depth", "sst", "NO3", "NO2", "NH4")
-kelp_df2 <- readRDS("kelp_df.rds")
+
 # Create a plot for each variable with a buffer of 10% of the data range
 plot_list <- lapply(seq_along(colors), function(i) {
   var <- y_vars[i]
@@ -232,7 +232,7 @@ y_vars <- c("kelp_biomass", "depth", "sst", "NO3", "NO2", "NH4")
   # crop the attribute_raster to the area of interest
   final_cropped <- crop(y, extent(area_sf))
   
-  depth_raster <- final_cropped
+  sst_raster <- final_cropped
   
 ```
 
@@ -241,6 +241,7 @@ Export the raster files
 ```{r}
 # export the raster layer object to a .tiff file
 writeRaster(sst_raster, filename = "sst_raster.tiff", format="GTiff")
+
 
 ```
 
