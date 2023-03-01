@@ -169,8 +169,17 @@ area_sf <- st_sf(geometry = st_sfc(rectangle))
 # Set the CRS of the rectangle to match the kelp_raster
 st_crs(area_sf) <- st_crs(kelp_raster)
 
+class(area_sf)
+
 ```
 
+Export the area_sf
+
+```{r}
+# Export dataframe into RDS format
+saveRDS(area_sf, file = "area_sf.rds")
+
+```
 
 ### 8. Interpolation using the IDW method (inverse distance weighting) over the area_sf
 http://132.72.155.230:3838/r/spatial-interpolation-of-point-data.html
@@ -215,7 +224,7 @@ Create a for loop that rasterize each attribute from the kelp_df
 y_vars <- c("kelp_biomass", "depth", "sst", "NO3", "NO2", "NH4")
 
   # interpolate with IDW method per attribute
-  x <- gstat::idw(NH4 ~ 1, kelp_sf_2, newdata = grid_sf, idp = 2)
+  x <- gstat::idw(sst ~ 1, kelp_sf_2, newdata = grid_sf, idp = 2)
   
   # rasterize the idw_model_object object using the var1.pred column
   y <- rasterize(x, empty_r, field = "var1.pred")
@@ -223,7 +232,7 @@ y_vars <- c("kelp_biomass", "depth", "sst", "NO3", "NO2", "NH4")
   # crop the attribute_raster to the area of interest
   final_cropped <- crop(y, extent(area_sf))
   
-  NH4_raster <- final_cropped
+  depth_raster <- final_cropped
   
 ```
 
@@ -231,7 +240,7 @@ y_vars <- c("kelp_biomass", "depth", "sst", "NO3", "NO2", "NH4")
 Export the raster files
 ```{r}
 # export the raster layer object to a .tiff file
-writeRaster(NH4_raster, filename = "NH4_raster.tiff", format="GTiff")
+writeRaster(sst_raster, filename = "sst_raster.tiff", format="GTiff")
 
 ```
 
@@ -265,7 +274,7 @@ plot(model_raster)
 ### 10. Plot the models and data raster with tmap
 ```{r}
 # Load the shapefile
-channel_islands <- st_read(here::here("data", "channel_islands.shp"))
+channel_islands <- st_read(here::here("CI_data", "channel_islands.shp"))
 
 ```
 
