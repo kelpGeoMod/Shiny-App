@@ -1,0 +1,1 @@
+This website is for the kelpGeoMod MEDS capstone group's project: Developing a Geospatial Model for Kelp Forest Management and Restoration 
