@@ -22,10 +22,10 @@ sidebar <- dashboardSidebar(
              menuSubItem('Model',
                          tabName = 'model',
                          icon = icon('line-chart'))),
-    menuItem(text = "User guide", tabName = "user_guide", icon = icon("gauge")),
-    menuItem(text = "Metadata", tabName = "metadata", icon = icon("gauge")),
-    menuItem(text = "Limitations", tabName = "limitations", icon = icon("gauge")),
-    menuItem(text = "References", tabName = "references", icon = icon("gauge"))
+    menuItem(text = "User guide", tabName = "user_guide", icon = icon("book")),
+    menuItem(text = "Metadata", tabName = "metadata", icon = icon("file")),
+    menuItem(text = "Limitations", tabName = "limitations", icon = icon("hand")),
+    menuItem(text = "References", tabName = "references", icon = icon("magnifying-glass"))
     
   ) # END sidebarMenu
   
@@ -148,7 +148,9 @@ body <- dashboardBody(
                                              "Sea surface temperature" = "sst",
                                              "NO3" = "NO3",
                                              "NO2" = "NO2",
-                                             "NH4" = "NH4")
+                                             "NH4" = "NH4"
+                                             )#,
+                              #selected = "kelp_biomass"
                               ), # END select input 1
               
                    # select input 2----
@@ -158,7 +160,9 @@ body <- dashboardBody(
                                              "Sea surface temperature" = "sst",
                                              "NO3" = "NO3",
                                              "NO2" = "NO2",
-                                             "NH4" = "NH4")
+                                             "NH4" = "NH4"
+                                             )#,
+                              #selected = "depth"
                               ), # END select input 2
             
                   # select input 3----
@@ -168,7 +172,8 @@ body <- dashboardBody(
                                              "Sea surface temperature" = "sst",
                                              "NO3" = "NO3",
                                              "NO2" = "NO2",
-                                             "NH4" = "NH4")
+                                             "NH4" = "NH4")#,
+                              #selected = "sst"
                              ) # END select input 3
             
             ), # END input box

@@ -98,7 +98,7 @@ server <- function(input, output) {
              NO3_raster = NO3,
              NO2_raster = NO2,
              NH4_raster = NH4) %>%
-      dplyr::select(latitude, longitude, year, quarter, input$map_input)
+      dplyr::select(latitude, longitude, year, quarter, input$map_input_var)
   })
   
   output$dt_output <- renderDataTable({
